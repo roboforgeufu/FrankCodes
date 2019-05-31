@@ -19,24 +19,29 @@ motorC = LargeMotor(OUTPUT_C)   #motor da garra
 """ FUNCOES """
 
 def cor(cor_lida):
-    if cor_lida < 10:
+    if cor_lida[0] < 10:
         #NoColor
         return 0
-    elif cor_lida < 30:
-        #Preto
-        return 1
-    elif cor_lida < 40:
-        #Verde
-        return 3
-    elif cor_lida < 110:
-        #Azul
-        return 2
-    elif cor_lida < 200:
-        #Vermelho
-        return 5
-    elif cor_lida < 220:
-        #Amarelo
-        return 4
+    elif cor_lida[0] < 140:
+        #Verde, Preto Azul
+        if cor_lida[2] < 30:
+            #Verde ou Preto
+            if cor_lida[1] < 60:
+                #PRETO
+                return 1
+            else:
+                #Verde
+                return 3
+        else:
+            #Azul
+            return 2
+
+    elif cor_lida[0] < 300:
+        #Vermelho ou Amarelo
+        if cor_lida[1] < 90:
+            return 5
+        else:
+            return 4
     else:
         #Branco
         return 6
@@ -75,10 +80,10 @@ def curva_direitacom2(x, velocidade):
 
 #ajuste em linha de uma cor especifica, um motor de cada vez
 def ajuste(cor, direcao):
-    while cor(sensor1.red) != cor:
+    while cor(sensor1.raw) != cor:
         motorA.run_forever(speed_sp = 100 * direcao)
     motorA.stop(stop_action = 'hold')
-    while cor(sensor1.red) != cor:
+    while cor(sensor1.raw) != cor:
         motorB.run_forever(speed_sp = 100 * direcao)
     motorB.stop(stop_action = 'hold')
 
@@ -108,8 +113,8 @@ def rodaroda(x):
     motorA.stop()
 
 #Anda a uma dada velocidade enquanto ve uma dada cor >>> os parametros sao a cor e a velocidade dos motores
-def anda_enquanto_cor(cor, velocidade):
-    while sensor1.color == cor and sensor2.color == cor:
+def anda_enquanto_cor(cor_, velocidade):
+    while cor_ == cor(sensor1.raw) and cor_ == cor(sensor2.raw):
         motorA.run_forever(speed_sp = velocidade)
         motorB.run_forever(speed_sp = velocidade)
     motorA.stop(stop_action = 'hold')
@@ -139,21 +144,21 @@ def re_por_rotacoes(posicao, velocidade):
 
 #Ajuste utilizando os dois motores ao mesmo tempo
 def ajuste_direto(direcao):
-    time.sleep(1)
-    x = cor(sensor1.red)
-    time.sleep(1)
+    #time.sleep(1)
+    x = cor(sensor1.raw)
+    #time.sleep(1)
     while True:
-        if cor(sensor1.red) == x:
+        if cor(sensor1.raw) == x:
             motorA.run_forever(speed_sp = 200 * direcao)
         else:
             motorA.stop(stop_action = 'hold')
 
-        if cor(sensor2.red) == x:
+        if cor(sensor2.raw) == x:
             motorB.run_forever(speed_sp = 200 * direcao)
         else:
             motorB.stop(stop_action = 'hold')
 
-        if cor(sensor1.red) != x and cor(sensor2.red) != x:
+        if cor(sensor1.raw) != x and cor(sensor2.raw) != x:
             motorA.stop(stop_action = 'hold')
             motorB.stop(stop_action = 'hold')
             break
@@ -163,7 +168,7 @@ def curva_direcao(x, tamanho_curva, velocidade):
     if x == 0:
         curva_direitacom2(tamanho_curva, velocidade)
     elif x == 2:
-        curva_esquerdacom2(tamanho_curva, velocida)
+        curva_esquerdacom2(tamanho_curva, velocidade)
 
 #funcao que gera os intervalos de cor lidas em rgb, continuar para maior precisao na leitura de cores
 def cor_intervalo():
@@ -184,13 +189,20 @@ def cor_intervalo():
     print(intervaloamplitude)
     #criar modulo de comparacao entre intervalos obtidos e cores
 
+def teste_garra():
+    #motorC.on_for_rotations(SpeedPercent(40), -2.5)
+    #time.sleep(5)
+    motorC.on_for_rotations(SpeedPercent(40), 3.5)
+    motorC.stop(stop_action = 'hold')
+    time.sleep(5)
+    motorC.on_for_rotations(SpeedPercent(40), -3.5)
 
 
 """ EXECUCAO """
 
 
 velocidade = 500
-tamanho_curva_2m = 500
+tamanho_curva_2m = 450
 
 cores_circuito = []
 #variavel criada para receber a associacao entre cores e direcoes
@@ -199,60 +211,77 @@ direcoes_disponiveis = [0, 1, 2]
 
 sensor1.calibrate_white()
 sensor2.calibrate_white()
-cor_atual = cor(sensor1.red)
+cor_atual = cor(sensor1.raw)
 anda_enquanto_cor(cor_atual, velocidade)
-re_por_rotacoes(-100, velocidade)
-ajuste_direto(1)
-time.sleep(0.5)
-frente_por_rotacoes(700, velocidade)
+frente_por_rotacoes(70, velocidade)
+ajuste_direto(-1)
+#time.sleep(0.5)
+frente_por_rotacoes(600, velocidade)
 
-time.sleep(1)
-cor_atual = cor(sensor1.red)
-time.sleep(1)
+#time.sleep(1)
+cor_atual = cor(sensor1.raw)
+print("LEU", cor_atual)
+#time.sleep(1)
 
 cores_circuito.append(cor_atual)
 
-for direcao in direcoes_disponiveis:
-    #Realiza esse laco p/ cada direcao, de 0 a 2
-    curva_direcao(direcao, tamanho_curva_2m, velocidade)
-    ajuste_direto(1)
-    time.sleep(1)
-    frente_por_rotacoes(100, velocidade)
-    cor_atual = cor(sensor1.red)
-    time.sleep(1)
+""" CODIGO QUE DEVE SER SEMPRE EXECUTADO, PARA CADA COR DE CRUZAMENTO"""
 
-    anda_enquanto_cor(cor_atual, velocidade)
-    frente_por_rotacoes(100, velocidade)
+if cor_atual in cor_direcao.keys():
+    print("JA APRENDEU")
+    curva_direcao(cor_direcao[cor_atual], tamanho_curva_2m, velocidade)
+    #vai pra proxima cor
+elif len(direcoes_disponiveis) == 1:
+    cor_direcao[cor_atual] = direcoes_disponiveis[0]
+    direcoes_disponiveis.pop(0)
+    curva_direcao(cor_direcao[cor_atual], tamanho_curva_2m, velocidade)
+    #vai pra proxima cor
+else:
+    print("APRENDE A DIRECAO DE", cor_atual)
+    for direcao in direcoes_disponiveis:
+        print("ENTROU NO LOOP =", direcao)
+        #Realiza esse laco p/ cada direcao, de 0 a 2
+        curva_direcao(direcao, tamanho_curva_2m, velocidade)
+        ajuste_direto(1)
 
-    time.sleep(1)
-    cor_lida = cor(sensor1.red)
-    re_por_rotacoes(-150, velocidade)
-    ajuste_direto(1)
+        frente_por_rotacoes(70, velocidade)
+        cor_atual = cor(sensor1.raw)
+        print("LEU", cor_atual)
+        #time.sleep(1)
 
-    motorC.on_for_degrees(SpeedPercent(20), 2)
-    motorC.on_for_degrees(SpeedPercent(20), -2)
+        anda_enquanto_cor(cor_atual, velocidade)
+        frente_por_rotacoes(130, velocidade)
 
-    if cor_lida == 1: #se a cor lida for preto
-        re_por_rotacoes(-70, velocidade)
-
+        #time.sleep(1)
+        cor_lida = cor(sensor1.raw)
+        print("LEU", cor_lida)
         ajuste_direto(-1)
 
-        re_por_rotacoes(-600, velocidade)
-        if direcao == 0:
-            curva_direcao(1, tamanho_curva_2m, velocidade)
-        elif direcao == 1:
-            curva_direcao(0, tamanho_curva_2m, velocidade)
-        ajuste_direto(1)
-        continue
-    else: #se ler qualquer outra cor
-        #associa a direcao a cor atual
-        cor_direcao[cor_atual] = direcao
-        #remove das direcoes possiveis a direcao atual
-        direcoes_disponiveis.remove(direcao)
-        motorC.on_for_degrees(SpeedPercent(20), 2)
-        motorC.on_for_degrees(SpeedPercent(20), -2)
-        break
-    #continuar a andar
+
+        if cor_lida == 1: #se a cor lida for preto
+            print("ENTRA EM PRETO")
+            re_por_rotacoes(-70, velocidade)
+
+            ajuste_direto(-1)
+
+            re_por_rotacoes(-400, velocidade)
+            if direcao == 0:
+                print("FAZ A CURVA DE VOLTA")
+                curva_direcao(2, tamanho_curva_2m, velocidade)
+            print("PROXIMA DIRECAO")
+            continue
+        else: #se ler qualquer outra cor
+            print("APRENDE")
+            #associa a direcao a cor atual
+            cor_direcao[cor_atual] = direcao
+            #remove das direcoes possiveis a direcao atual
+            direcoes_disponiveis.remove(direcao)
+
+            break
+        #continuar a andar
+time.sleep(100)
+
+
 
 '''
 se a cor ja existir na cor_direcao: adotar a direcao como a associada previamente, caso nao, testar.
